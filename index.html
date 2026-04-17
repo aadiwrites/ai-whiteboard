@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Study Whiteboard Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      overflow: hidden;
+    }
+
+    #toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+    }
+
+    button {
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      background: white;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    canvas {
+      display: block;
+      background: #fff;
+      touch-action: none;
+    }
+
+    .note {
+      position: absolute;
+      top: 120px;
+      left: 50px;
+      background: yellow;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: move;
+      min-width: 80px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="toolbar">
+  <button onclick="tool='pen'">✏️ Pen</button>
+  <button onclick="tool='eraser'">🧽 Eraser</button>
+
+  <button onclick="setColor('black')">Black</button>
+  <button onclick="setColor('red')">Red</button>
+  <button onclick="setColor('blue')">Blue</button>
+
+  <button onclick="clearBoard()">Clear</button>
+  <button onclick="addNote()">🟨 Note</button>
+</div>
+
+<canvas id="board"></canvas>
+
+<script>
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+// full screen canvas
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight - 50;
+
+// smooth drawing
+ctx.lineCap = "round";
+ctx.lineJoin = "round";
+
+let drawing = false;
+let tool = "pen";
+let color = "black";
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight - 50;
+}
+window.addEventListener("resize", resize);
+
+// correct touch + mouse position
+function getPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+
+  return {
+    x: t.clientX - rect.left,
+    y: t.clientY - rect.top
+  };
+}
+
+// start drawing
+canvas.addEventListener("mousedown", start);
+canvas.addEventListener("touchstart", start);
+
+function start(e){
+  drawing = true;
+  const p = getPos(e);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+}
+
+// draw
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("touchmove", draw);
+
+function draw(e){
+  if(!drawing) return;
+
+  const p = getPos(e);
+
+  ctx.lineWidth = tool === "eraser" ? 20 : 3;
+  ctx.strokeStyle = tool === "eraser" ? "white" : color;
+
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+}
+
+// stop drawing
+canvas.addEventListener("mouseup", stop);
+canvas.addEventListener("mouseleave", stop);
+canvas.addEventListener("touchend", stop);
+
+function stop(){
+  drawing = false;
+}
+
+// tools
+function setColor(c){
+  color = c;
+}
+
+function clearBoard(){
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// sticky note
+function addNote(){
+  const note = document.createElement("div");
+  note.className = "note";
+  note.contentEditable = true;
+  note.innerText = "New Note";
+  document.body.appendChild(note);
+
+  let ox = 0, oy = 0;
+
+  note.onmousedown = (e)=>{
+    ox = e.offsetX;
+    oy = e.offsetY;
+
+    document.onmousemove = (e)=>{
+      note.style.left = (e.pageX - ox) + "px";
+      note.style.top = (e.pageY - oy) + "px";
+    };
+
+    document.onmouseup = ()=>{
+      document.onmousemove = null;
+    };
+  };
+}
+</script>
+
+</body>
+</html>
