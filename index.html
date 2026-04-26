@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pro Whiteboard</title>
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  overflow:hidden;
+  background:#f8f8f8;
+}
+
+#toolbar{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:8px;
+  background:white;
+  border-bottom:1px solid #ddd;
+  z-index:1000;
+}
+
+button,input,select{
+  padding:6px;
+  border:1px solid #ccc;
+  border-radius:8px;
+}
+
+#boardWrap{
+  position:relative;
+  margin-top:110px;
+  width:100vw;
+  height:calc(100vh - 110px);
+  overflow:hidden;
+  background:white;
+}
+
+canvas{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  touch-action:none;
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <select id="brushType">
+    <option value="pen">✏️ Pen</option>
+    <option value="marker">🖊 Marker</option>
+    <option value="brush">🖌 Brush</option>
+    <option value="airbrush">🌫 Airbrush</option>
+    <option value="hardEraser">🧽 Hard Eraser</option>
+    <option value="softEraser">☁️ Soft Eraser</option>
+    <option value="airEraser">🌫 Air Eraser</option>
+  </select>
+
+  <input type="color" id="colorPicker" value="#000000">
+  <input type="range" id="sizeSlider" min="1" max="50" value="3">
+  <button onclick="clearBoard()">Clear</button>
+</div>
+
+<div id="boardWrap">
+  <canvas id="board"></canvas>
+</div>
+
+<script>
+const wrap = document.getElementById("boardWrap");
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+canvas.width = wrap.clientWidth;
+canvas.height = wrap.clientHeight;
+
+ctx.lineCap = "round";
+ctx.lineJoin = "round";
+
+let drawing = false;
+
+function getPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+
+  return {
+    x: t.clientX - rect.left,
+    y: t.clientY - rect.top
+  };
+}
+
+function getBrushStyle(){
+  const type = document.getElementById("brushType").value;
+  const color = document.getElementById("colorPicker").value;
+  const size = Number(document.getElementById("sizeSlider").value);
+
+  switch(type){
+    case "marker":
+      return {color,size:size*2,opacity:0.5};
+
+    case "brush":
+      return {color,size:size*3,opacity:0.8};
+
+    case "airbrush":
+      return {color,size:size*4,opacity:0.2};
+
+    case "hardEraser":
+      return {color:"white",size:size*3,opacity:1};
+
+    case "softEraser":
+      return {color:"white",size:size*4,opacity:0.4};
+
+    case "airEraser":
+      return {color:"white",size:size*5,opacity:0.2};
+
+    default:
+      return {color,size,opacity:1};
+  }
+}
+
+function startDraw(e){
+  e.preventDefault();
+  drawing = true;
+
+  const p = getPos(e);
+
+  ctx.beginPath();
+  ctx.moveTo(p.x,p.y);
+}
+
+function draw(e){
+  e.preventDefault();
+  if(!drawing) return;
+
+  const p = getPos(e);
+  const style = getBrushStyle();
+
+  ctx.strokeStyle = style.color;
+  ctx.lineWidth = style.size;
+  ctx.globalAlpha = style.opacity;
+
+  ctx.lineTo(p.x,p.y);
+  ctx.stroke();
+}
+
+function stopDraw(e){
+  e.preventDefault();
+  drawing = false;
+  ctx.globalAlpha = 1;
+}
+
+canvas.addEventListener("mousedown",startDraw);
+canvas.addEventListener("mousemove",draw);
+canvas.addEventListener("mouseup",stopDraw);
+
+canvas.addEventListener("touchstart",startDraw,{passive:false});
+canvas.addEventListener("touchmove",draw,{passive:false});
+canvas.addEventListener("touchend",stopDraw,{passive:false});
+
+function clearBoard(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+</script>
+
+</body>
+</html>
