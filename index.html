@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hybrid Infinite Whiteboard</title>
+  <style>
+    body{
+      margin:0;
+      overflow:hidden;
+      font-family:Arial;
+      background:white;
+    }
+
+    #toolbar{
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      padding:8px;
+      background:white;
+      border-bottom:1px solid #ddd;
+      z-index:10;
+    }
+
+    button,input{
+      padding:6px;
+      border:1px solid #ccc;
+      border-radius:8px;
+    }
+
+    #wrap{
+      position:absolute;
+      top:56px;
+      left:0;
+      right:0;
+      bottom:0;
+      overflow:hidden;
+      background:white;
+    }
+
+    canvas{
+      display:block;
+      touch-action:none;
+      background:white;
+    }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button onclick="tool='pen'">✏️ Pen</button>
+  <button onclick="tool='eraser'">🧽 Eraser</button>
+  <button onclick="mode='pan'">✋ Pan</button>
+  <button onclick="toggleGrid()">#️⃣ Grid</button>
+  <button onclick="zoomIn()">➕</button>
+  <button onclick="zoomOut()">➖</button>
+  <button onclick="clearBoard()">Clear</button>
+  <input type="color" onchange="color=this.value">
+  <input type="range" min="1" max="30" value="3" onchange="size=this.value">
+</div>
+
+<div id="wrap">
+  <canvas id="board"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+let tool = "pen";
+let mode = "draw";
+let color = "#000000";
+let size = 3;
+let drawing = false;
+let grid = false;
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight - 56;
+
+ctx.lineCap = "round";
+ctx.lineJoin = "round";
+
+function redrawGrid(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+
+  if(grid){
+    for(let x=0; x<3000; x+=50){
+      ctx.beginPath();
+      ctx.moveTo(x,0);
+      ctx.lineTo(x,3000);
+      ctx.strokeStyle="#eee";
+      ctx.lineWidth=1/scale;
+      ctx.stroke();
+    }
+
+    for(let y=0; y<3000; y+=50){
+      ctx.beginPath();
+      ctx.moveTo(0,y);
+      ctx.lineTo(3000,y);
+      ctx.strokeStyle="#eee";
+      ctx.lineWidth=1/scale;
+      ctx.stroke();
+    }
+  }
+}
+
+redrawGrid();
+
+function getPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+
+  return {
+    x:(t.clientX-rect.left-offsetX)/scale,
+    y:(t.clientY-rect.top-offsetY)/scale
+  };
+}
+
+canvas.addEventListener("mousedown",start);
+canvas.addEventListener("mousemove",draw);
+canvas.addEventListener("mouseup",stop);
+
+canvas.addEventListener("touchstart",start);
+canvas.addEventListener("touchmove",draw);
+canvas.addEventListener("touchend",stop);
+
+let panStart = null;
+
+function start(e){
+  if(mode==="pan"){
+    panStart = {
+      x:e.clientX || e.touches[0].clientX,
+      y:e.clientY || e.touches[0].clientY
+    };
+    return;
+  }
+
+  drawing = true;
+  const p = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x,p.y);
+}
+
+function draw(e){
+  if(mode==="pan" && panStart){
+    const x = e.clientX || e.touches[0].clientX;
+    const y = e.clientY || e.touches[0].clientY;
+
+    offsetX += x - panStart.x;
+    offsetY += y - panStart.y;
+
+    panStart = {x,y};
+
+    redrawGrid();
+    return;
+  }
+
+  if(!drawing) return;
+
+  const p = getPos(e);
+
+  ctx.lineWidth = size/scale;
+  ctx.strokeStyle = tool==="eraser" ? "white" : color;
+
+  ctx.lineTo(p.x,p.y);
+  ctx.stroke();
+}
+
+function stop(){
+  drawing = false;
+  panStart = null;
+}
+
+function zoomIn(){
+  scale *= 1.2;
+  redrawGrid();
+}
+
+function zoomOut(){
+  scale *= 0.8;
+  redrawGrid();
+}
+
+function toggleGrid(){
+  grid = !grid;
+  redrawGrid();
+}
+
+function clearBoard(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  redrawGrid();
+}
+</script>
+
+</body>
+</html>
