@@ -61,9 +61,33 @@ function stopDraw(){
   drawing = false;
 }
 
-canvas.addEventListener("mousedown",startDraw);
-canvas.addEventListener("mousemove",draw);
-window.addEventListener("mouseup",stopDraw);
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", draw);
+window.addEventListener("mouseup", stopDraw);
+
+canvas.addEventListener("touchstart", (e) => {
+  const touch = e.touches[0];
+
+  startDraw({
+    clientX: touch.clientX,
+    clientY: touch.clientY
+  });
+
+  e.preventDefault();
+});
+
+canvas.addEventListener("touchmove", (e) => {
+  const touch = e.touches[0];
+
+  draw({
+    clientX: touch.clientX,
+    clientY: touch.clientY
+  });
+
+  e.preventDefault();
+});
+
+canvas.addEventListener("touchend", stopDraw);
 
 document.getElementById("zoomIn").onclick = () => {
   scale += 0.1;
