@@ -62,3 +62,10 @@ canvas{
   left:0;
   touch-action:none;
 }
+canvas{
+  z-index:1;
+}
+
+.tool{
+  cursor:pointer;
+}
